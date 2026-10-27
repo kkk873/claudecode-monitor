@@ -109,6 +109,7 @@ function normalize(entry, ctx) {
             isError: !!b.is_error,
             text: clip(contentToText(b.content)),
             resultAgentId: tur.agentId || null,
+            resultTaskId: tur.backgroundTaskId || null,
             resultStatus: tur.status || null,
           }, i);
         });

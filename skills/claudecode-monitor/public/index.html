@@ -14,10 +14,11 @@
     --mb-font-sans: "Ubuntu Sans", "Noto Sans JP", "Noto Sans CJK JP", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
     --mb-font-mono: "UbuntuMono Nerd Font", "Ubuntu Mono", "Noto Sans Mono CJK JP", ui-monospace, monospace;
     --mb-radius: 14px; --mb-radius-s: 10px; --mb-border-w: 2px;
-    --l0: 0%; --l1: 36%; --l2: 77%; --w0: 36%; --w1: 41%; --w2: 23%;
+    /* lanes: User / Agents (main + subagents) / Skills / MCP */
+    --l0: 0%; --l1: 7%; --l2: 62%; --l3: 77%; --w0: 7%; --w1: 55%; --w2: 15%; --w3: 23%;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; min-width: 600px; background: var(--mb-bg); color: var(--mb-ink-body);
+  html, body { margin: 0; min-width: 760px; background: var(--mb-bg); color: var(--mb-ink-body);
     font: 14px/1.6 var(--mb-font-sans); font-feature-settings: "palt"; letter-spacing: 0.01em;
     word-break: auto-phrase; line-break: strict; }
   button, select, input { font: inherit; }
@@ -25,7 +26,7 @@
   header { position: sticky; top: 0; z-index: 10; background: var(--mb-bg); border-bottom: var(--mb-border-w) solid var(--mb-border);
     display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; padding: 12px 16px; }
   header h1 { margin: 0; font-size: 18px; font-weight: 700; line-height: 1.3; color: var(--mb-ink);
-    border-left: 8px solid var(--mb-ink); padding-left: 12px; white-space: nowrap; display: flex; align-items: center; gap: 10px; }
+    white-space: nowrap; display: flex; align-items: center; gap: 10px; }
   .live { width: 10px; height: 10px; border-radius: 50%; border: var(--mb-border-w) solid var(--mb-border); background: var(--mb-surface); }
   .live.on { background: var(--mb-ink); animation: blink 1.6s ease-in-out infinite; }
   @keyframes blink { 50% { opacity: .35; } }
@@ -39,15 +40,18 @@
   .stat b { color: var(--mb-ink); font-family: var(--mb-font-mono); font-size: 15px; margin-left: 4px; }
 
   .lanes { position: sticky; top: var(--hh, 56px); z-index: 9; display: flex; background: var(--mb-bg); border-bottom: var(--mb-border-w) solid var(--mb-border); }
-  .lanes div { padding: 10px 16px; }
-  .lanes span { font-weight: 700; color: var(--mb-ink); border-left: 6px solid var(--mb-ink); padding-left: 10px; font-size: 15px; }
+  .lanes div { padding: 10px 12px; white-space: nowrap; overflow: hidden; }
+  .lanes span { font-weight: 700; color: var(--mb-ink); border-left: 6px solid var(--mb-ink); padding-left: 8px; font-size: 15px; }
   .lanes div:nth-child(1) { width: var(--w0); }
-  .lanes div:nth-child(2) { width: var(--w1); border-left: var(--mb-border-w) solid var(--mb-rule); }
-  .lanes div:nth-child(3) { width: var(--w2); border-left: var(--mb-border-w) solid var(--mb-rule); }
+  .lanes div:nth-child(2) { width: var(--w1); }
+  .lanes div:nth-child(3) { width: var(--w2); }
+  .lanes div:nth-child(4) { width: var(--w3); }
+  .lanes div + div { border-left: var(--mb-border-w) solid var(--mb-rule); }
+  .lanes div:first-child { padding: 10px 4px 10px 10px; }
+  .lanes div:first-child span { padding-left: 6px; }
 
   #diagram { position: relative; padding-bottom: 120px; }
-  #diagram::before, #diagram::after { content: ""; position: absolute; top: 0; bottom: 0; width: 0; border-left: var(--mb-border-w) solid var(--mb-rule); }
-  #diagram::before { left: var(--l1); } #diagram::after { left: var(--l2); }
+  .divider { position: absolute; top: 0; bottom: 0; width: 0; border-left: var(--mb-border-w) solid var(--mb-rule); }
 
   .row { position: relative; min-height: 8px; padding: 4px 0; }
   .row.new { animation: appear .35s ease-out; }
@@ -65,12 +69,19 @@
   /* agents are told apart by fill (and their A1/A2 chip), not by color */
   .act.p1 { background: var(--mb-code-bg); }
   .act.p2 { background: repeating-linear-gradient(45deg, var(--mb-surface) 0 3px, var(--mb-rule) 3px 5px); }
-  .act.skill { border-color: var(--mb-muted); background: var(--mb-bg); }
+  .act.skill, .act.mcp { border-color: var(--mb-muted); background: var(--mb-bg); }
+  .act.user { background: var(--mb-code-bg); }
 
   .card { position: relative; z-index: 1; background: var(--mb-surface); border: var(--mb-border-w) solid var(--mb-border);
     border-radius: var(--mb-radius-s); padding: 5px 12px; cursor: pointer; overflow: hidden; }
   .card:hover { box-shadow: 3px 3px 0 var(--mb-ink); }
+  .card { container-type: inline-size; }
   .card .hd { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+  .card .hd > .chip { flex: none; }
+  /* narrow cards (Skills / MCP lanes, many parallel boxes): keep the name, drop summary and time */
+  @container (max-width: 230px) { .card .hd > .sm:empty, .card .hd > .tm { display: none; } }
+  @container (max-width: 170px) { .card .hd > .sm, .card .hd > .chip.srv { display: none; } }
+  .card .hd > .nm { overflow: hidden; text-overflow: ellipsis; min-width: 2em; }
   .card .nm { font-weight: 700; color: var(--mb-ink); white-space: nowrap; }
   .card .sm { color: var(--mb-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0;
     font-family: var(--mb-font-mono); font-size: 13.5px; }
@@ -87,18 +98,14 @@
   .card.text { border-color: var(--mb-rule); }
   .card.text .body { white-space: pre-wrap; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   .card.open.text .body { display: block; }
+  .card.user { border-color: var(--mb-border); }
+  .card.user .body { -webkit-line-clamp: 4; }
+  .card .chip.srv { max-width: 9em; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
   .card pre { display: none; margin: 8px 0 4px; padding: 10px 12px; background: var(--mb-bg); border: var(--mb-border-w) solid var(--mb-rule);
     border-radius: 8px; max-height: 360px; overflow: auto; white-space: pre-wrap; word-break: break-word;
     font: 13px/1.5 var(--mb-font-mono); color: var(--mb-ink-body); }
   .card.open pre { display: block; }
   .card pre .k { color: var(--mb-muted); font-weight: 700; }
-
-  .banner { margin: 16px 12px 8px; padding: 10px 16px; border-radius: var(--mb-radius); background: var(--mb-surface);
-    border: var(--mb-border-w) solid var(--mb-border); position: relative; z-index: 1; cursor: pointer; }
-  .banner .who { display: block; font-weight: 700; color: var(--mb-ink); font-size: 13px; margin-bottom: 2px; }
-  .banner .who .tm { color: var(--mb-muted); font-family: var(--mb-font-mono); font-weight: 400; margin-left: 8px; }
-  .banner .body { white-space: pre-wrap; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-  .banner.open .body { display: block; }
 
   .arrow { height: 32px; }
   .arrow .ln { position: absolute; top: 22px; height: 0; border-top: 2px solid var(--mb-ink); z-index: 2; }
@@ -116,6 +123,8 @@
   .arrow.ret .lb { color: var(--mb-muted); font-weight: 500; }
   .arrow.err .lb { color: var(--mb-accent); }
   .arrow .lb .tm { font-family: var(--mb-font-mono); font-weight: 400; }
+  /* arrows inside the Agents lane are only a few px long: put the label in the card column instead */
+  .arrow .lb.side { top: 12px; bottom: auto; left: auto; transform: none; max-width: none; }
   .arrow .ln { animation: grow .45s ease-out; transform-origin: var(--from, left); }
   @keyframes grow { from { transform: scaleX(0); } }
 
@@ -136,43 +145,49 @@
   <label class="tg"><input type="checkbox" id="follow" checked> 最新セッションを追従</label>
   <label class="tg"><input type="checkbox" id="showText" checked> テキスト</label>
   <div class="stats">
-    <span class="stat">tools<b id="sTools">0</b></span><span class="stat">subagents<b id="sAgents">0</b></span><span class="stat">skills<b id="sSkills">0</b></span>
+    <span class="stat">tools<b id="sTools">0</b></span><span class="stat">subagents<b id="sAgents">0</b></span><span class="stat">skills<b id="sSkills">0</b></span><span class="stat">mcp<b id="sMcp">0</b></span>
   </div>
 </header>
-<div class="lanes"><div><span>Main Agent</span></div><div><span>Subagents</span></div><div><span>Skills</span></div></div>
+<div class="lanes"><div><span>User</span></div><div><span>Agents</span></div><div><span>Skills</span></div><div><span>MCP</span></div></div>
 <div id="diagram"><div class="empty">セッションを読み込み中</div></div>
 <button id="jump"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 1v9M2 6l4 4 4-4"/></svg>最新へ</button>
 
 <script>
 const $ = (id) => document.getElementById(id);
 const diagram = $('diagram');
-const LANE = { main: 0, sub: 1, skill: 2 };
+// main and subagents share the Agents lane: the main agent's box is leftmost, subagent slot i sits at position i + 1
+const LANE = { user: 0, main: 1, sub: 1, skill: 2, mcp: 3 };
 const SLOT = 18;
 const HALF = 7; // half the activation box width; arrows stop at the box edge
 
 let st, es, currentSession = null, sessionsCache = [];
 
 function resetState() {
-  st = { agents: new Map(), calls: new Map(), subSlots: [], skillSlots: [], counts: { tools: 0, agents: 0, skills: 0 }, live: false,
-    mainAct: null, lastAct: new Map() };
+  st = { agents: new Map(), calls: new Map(), subSlots: [], skillSlots: [], mcpSlots: [], mcpSlotOf: new Map(),
+    counts: { tools: 0, agents: 0, bg: 0, skills: 0, mcp: 0 }, live: false, mainAct: null, userAct: null, lastAct: new Map() };
   diagram.innerHTML = '';
+  for (let i = 1; i < 4; i++) {
+    const d = el('div', 'divider');
+    d.style.left = `var(--l${i})`;
+    diagram.appendChild(d);
+  }
   updateStats();
 }
 
 // ---------- geometry ----------
+const pos = (lane, slot = 0) => (lane === 'sub' ? slot + 1 : slot);
 function laneX(lane, slot = 0) {
-  const base = ['var(--l0)', 'var(--l1)', 'var(--l2)'][LANE[lane]];
-  return `calc(${base} + 18px + ${slot * SLOT}px)`;
+  return `calc(var(--l${LANE[lane]}) + 18px + ${pos(lane, slot) * SLOT}px)`;
 }
-// Cards sit a fixed gap to the right of the rightmost active box in their lane, same as the main lane.
+// Cards sit a fixed gap to the right of the rightmost box in their lane.
 function cardBox(lane) {
-  const slots = lane === 'sub' ? st.subSlots : lane === 'skill' ? st.skillSlots : [true];
   let n = 1;
-  slots.forEach((o, i) => { if (o) n = Math.max(n, i + 1); });
+  if (lane === 'mcp') n = Math.max(1, st.mcpSlotOf.size); // one lifeline per known server
+  else if (lane === 'main' || lane === 'sub') st.subSlots.forEach((o, i) => { if (o) n = Math.max(n, i + 2); });
+  else if (lane === 'skill') st.skillSlots.forEach((o, i) => { if (o) n = Math.max(n, i + 1); });
   const off = 18 + (n - 1) * SLOT + HALF + 9;
-  const base = ['var(--l0)', 'var(--l1)', 'var(--l2)'][LANE[lane]];
-  const w = ['var(--w0)', 'var(--w1)', 'var(--w2)'][LANE[lane]];
-  return { left: `calc(${base} + ${off}px)`, width: `calc(${w} - ${off + 12}px)` };
+  const i = LANE[lane];
+  return { left: `calc(var(--l${i}) + ${off}px)`, width: `calc(var(--w${i}) - ${off + 12}px)` };
 }
 function allocSlot(arr, owner) {
   let i = arr.indexOf(null);
@@ -194,19 +209,23 @@ function fmtDur(ms) { return ms == null || isNaN(ms) ? '' : ms < 1000 ? `${ms}ms
 function newRow(cls) {
   const r = el('div', 'row ' + (cls || ''));
   if (st.live) r.classList.add('new');
-  const line = el('div', 'lifeline');
-  line.style.left = laneX('main');
-  r.appendChild(line);
-  if (cls !== 'user') {
-    st.mainAct = st.mainAct || {};
-    addAct(r, st.mainAct, 'main', 0, 'main');
+  // dashed lifelines for participants that always exist: the user, the main agent, each MCP server seen so far
+  const lines = [['user', 0], ['main', 0], ...[...st.mcpSlotOf.values()].map((i) => ['mcp', i])];
+  for (const [lane, slot] of lines) {
+    const line = el('div', 'lifeline');
+    line.style.left = laneX(lane, slot);
+    r.appendChild(line);
   }
+  if (st.userAct) addAct(r, st.userAct, 'user', 0, 'user');
+  st.mainAct = st.mainAct || {};
+  addAct(r, st.mainAct, 'main', 0, 'main');
   st.subSlots.forEach((owner, i) => {
     if (!owner) return;
     const a = st.agents.get(owner) || st.calls.get(owner);
     if (a) addAct(r, a, 'sub', i, 'p' + ((a.n - 1) % 3));
   });
   st.skillSlots.forEach((owner, i) => { if (owner) addAct(r, owner, 'skill', i, 'skill'); });
+  st.mcpSlots.forEach((owner, i) => { if (owner) addAct(r, owner, 'mcp', i, 'mcp'); });
   diagram.appendChild(r);
   return r;
 }
@@ -226,14 +245,14 @@ function endMainTurn() {
   st.mainAct = null;
 }
 
-function addCard(lane, { cls = '', name, summary, chip, ts, details, body, rowCls }) {
+function addCard(lane, { cls = '', name, summary, chip, chipCls, ts, details, body, rowCls }) {
   const r = newRow(rowCls);
   const c = el('div', 'card ' + cls);
   const box = cardBox(lane);
   c.style.marginLeft = box.left; c.style.width = box.width;
   const hd = el('div', 'hd');
   if (cls.includes('tool')) { c.dot = el('span', 'dot run'); hd.appendChild(c.dot); }
-  if (chip) hd.appendChild(el('span', 'chip', chip));
+  if (chip) { const ch = el('span', 'chip' + (chipCls ? ' ' + chipCls : ''), chip); ch.title = chip; hd.appendChild(ch); }
   if (name) hd.appendChild(el('span', 'nm', name));
   hd.appendChild(el('span', 'sm', summary == null ? '' : summary));
   c.tm = el('span', 'tm', fmtTime(ts));
@@ -258,7 +277,7 @@ function setDetails(card, sections) {
 
 function addArrow(from, to, { label, chip, dur, ret, err, details }) {
   const r = newRow('arrow' + (ret ? ' ret' : '') + (err ? ' err' : ''));
-  const a = LANE[from[0]] * 100 + from[1], b = LANE[to[0]] * 100 + to[1];
+  const a = LANE[from[0]] * 100 + pos(...from), b = LANE[to[0]] * 100 + pos(...to);
   const [L, R] = a <= b ? [from, to] : [to, from];
   r.classList.add(a <= b ? 'r' : 'l');
   const ln = el('div', 'ln');
@@ -269,14 +288,19 @@ function addArrow(from, to, { label, chip, dur, ret, err, details }) {
   if (chip) lb.appendChild(el('span', 'chip', chip));
   lb.appendChild(el('span', null, label));
   if (dur) lb.appendChild(el('span', 'tm', dur));
-  ln.appendChild(lb);
+  if (LANE[from[0]] === LANE[to[0]]) {
+    lb.classList.add('side');
+    lb.style.left = cardBox(from[0]).left;
+    r.appendChild(lb);
+  } else ln.appendChild(lb);
   r.appendChild(ln);
   if (details) {
     lb.title = 'クリックで詳細';
     let card = null;
     lb.addEventListener('click', () => {
       if (card) { card.parentElement.remove(); card = null; return; }
-      const lane = to[0] === 'skill' && !ret ? 'skill' : (ret ? to[0] : from[0]);
+      // show details beside whichever end is not the User lane (it is too narrow for a card)
+      const lane = to[0] === 'user' ? from[0] : from[0] === 'user' ? to[0] : (to[0] === 'skill' && !ret ? 'skill' : (ret ? to[0] : from[0]));
       card = addCardAfter(r, lane, details);
     });
   }
@@ -318,7 +342,8 @@ function ensureAgent(agentId, ev) {
   st.subSlots[a.slot] = agentId;
   return a;
 }
-const tag = (a) => 'A' + a.n;
+// A1, A2… for subagents; B1, B2… for background commands
+const tag = (a) => (a.kind === 'bg' ? 'B' : 'A') + a.n;
 function endAgent(a, ts, text, err) {
   if (a.done) return;
   a.done = true;
@@ -343,23 +368,17 @@ function summarize(name, input = {}) {
     case 'WebFetch': return input.url;
     case 'WebSearch': return input.query;
     case 'TodoWrite': return `${(input.todos || []).length} items`;
+    case 'AskUserQuestion': return ((input.questions || [])[0] || {}).question || '';
   }
   const v = Object.values(input).find((x) => typeof x === 'string');
   return v || JSON.stringify(input).slice(0, 120);
 }
-function shortName(name) {
+function mcpParts(name) {
   const m = name.match(/^mcp__(.+?)__(.+)$/);
-  return m ? m[2] : name;
-}
-function banner(who, ts, text) {
-  const r = newRow('user');
-  const b = el('div', 'banner');
-  const w = el('span', 'who', who);
-  w.appendChild(el('span', 'tm', fmtTime(ts)));
-  b.appendChild(w);
-  b.appendChild(el('div', 'body', text || ''));
-  b.addEventListener('click', () => b.classList.toggle('open'));
-  r.appendChild(b);
+  if (!m) return null;
+  // connector servers are named by UUID; keep just enough to tell them apart
+  const server = /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(m[1]) ? m[1].slice(0, 8) : m[1];
+  return { server, tool: m[2] };
 }
 
 function handle(ev) {
@@ -367,23 +386,27 @@ function handle(ev) {
     case 'user':
       endSkills(null);
       endMainTurn();
-      banner('User', ev.ts, ev.text);
+      addArrow(['user', 0], ['main', 0], { label: '依頼' });
+      addCard('main', { cls: 'text user', name: 'User', ts: ev.ts, body: ev.text });
       return;
     case 'slash': {
       endSkills(null);
       endMainTurn();
-      banner(`User  /${ev.name}`, ev.ts, ev.text);
       const slot = allocSlot(st.skillSlots, { owner: null, name: ev.name });
       st.counts.skills++;
-      addArrow(['main', 0], ['skill', slot], { label: `/${ev.name}` });
+      addArrow(['user', 0], ['skill', slot], { label: `/${ev.name}` });
       addCard('skill', { name: ev.name, summary: ev.text, ts: ev.ts, details: [['args', ev.text]] });
       return;
     }
     case 'notify': {
-      // a background agent finished: close its lifeline instead of showing a card
+      // a background agent or command finished: close its box instead of showing a card
       const id = (ev.text.match(/<task-id>([^<]+)<\/task-id>/) || ev.text.match(/<agent-message from="([^"]+)"/) || [])[1];
       const a = id && st.agents.get(id);
-      if (a) { if (!a.done) endAgent(a, ev.ts, ev.text); return; }
+      if (a) {
+        const failed = /<status>\s*(failed|killed|error)/i.test(ev.text);
+        if (!a.done) endAgent(a, ev.ts, ev.text, failed);
+        return;
+      }
       const summ = (ev.text.match(/<summary>([\s\S]*?)<\/summary>/) || ev.text.match(/<status>([\s\S]*?)<\/status>/) || [])[1];
       addCard('main', { name: '通知', summary: summ || '', ts: ev.ts, details: [['message', ev.text]] });
       return;
@@ -419,6 +442,15 @@ function handle(ev) {
           details: [['prompt', input.prompt], ['input', input]] });
         break;
       }
+      if (ev.name === 'Bash' && input.run_in_background) {
+        // a background command runs alongside the agents until its completion notification
+        const call = { kind: 'bg', type: 'background', n: ++st.counts.bg, ts: ev.ts, caller, async: true, input };
+        call.slot = allocSlot(st.subSlots, ev.toolUseId);
+        st.calls.set(ev.toolUseId, call);
+        addArrow(caller, ['sub', call.slot], { chip: tag(call), label: `background — ${input.description || input.command}` });
+        call.card = addCard('sub', { cls: 'tool', chip: tag(call), name: 'Bash', summary: input.command, ts: ev.ts, details: [['input', input]] });
+        break;
+      }
       if (ev.name === 'Skill') {
         const name = input.skill || input.command || input.name || 'skill';
         const slot = allocSlot(st.skillSlots, { owner: ev.agent || null, name });
@@ -429,8 +461,31 @@ function handle(ev) {
         call.card = addCard('skill', { cls: 'tool', name, summary: input.args || '', ts: ev.ts, details: [['input', input]] });
         break;
       }
+      if (ev.name === 'AskUserQuestion') {
+        // the user is "active" while Claude waits for an answer
+        st.userAct = {};
+        const call = { kind: 'ask', ts: ev.ts, caller, input, owner: st.userAct };
+        st.calls.set(ev.toolUseId, call);
+        addArrow(caller, ['user', 0], { label: '質問', details: [['questions', input.questions || input]] });
+        call.card = addCard(caller[0], { cls: 'tool', chip: callerAgent ? tag(callerAgent) : null, name: 'AskUserQuestion',
+          summary: summarize(ev.name, input), ts: ev.ts, details: [['input', input]] });
+        break;
+      }
+      const mcp = mcpParts(ev.name);
+      if (mcp) {
+        if (!st.mcpSlotOf.has(mcp.server)) st.mcpSlotOf.set(mcp.server, st.mcpSlotOf.size);
+        const slot = st.mcpSlotOf.get(mcp.server);
+        st.counts.mcp++;
+        const call = { kind: 'mcp', slot, ts: ev.ts, caller, input };
+        st.mcpSlots[slot] = call;
+        st.calls.set(ev.toolUseId, call);
+        addArrow(caller, ['mcp', slot], { chip: callerAgent ? tag(callerAgent) : null, label: `${mcp.server}: ${mcp.tool}` });
+        call.card = addCard('mcp', { cls: 'tool', chip: mcp.server, chipCls: 'srv', name: mcp.tool, summary: summarize(mcp.tool, input),
+          ts: ev.ts, details: [['input', input]] });
+        break;
+      }
       st.counts.tools++;
-      const card = addCard(caller[0], { cls: 'tool', chip: callerAgent ? tag(callerAgent) : null, name: shortName(ev.name),
+      const card = addCard(caller[0], { cls: 'tool', chip: callerAgent ? tag(callerAgent) : null, name: ev.name,
         summary: summarize(ev.name, input), ts: ev.ts, details: [['input', input]] });
       st.calls.set(ev.toolUseId, { kind: 'tool', card, ts: ev.ts, input });
       break;
@@ -445,9 +500,25 @@ function handle(ev) {
           call.async = true;
           addArrow(['sub', call.slot], call.caller, { chip: tag(call), ret: true, label: 'バックグラウンドで開始' });
         } else endAgent(call, ev.ts, ev.text, ev.isError);
+      } else if (call.kind === 'bg') {
+        finishTool(call.card, ev, call.ts, call.input);
+        const taskId = ev.resultTaskId || (ev.text.match(/with ID:?\s*([\w-]+)/i) || [])[1];
+        if (taskId) st.agents.set(taskId, call);
+        if (ev.isError || !taskId) endAgent(call, ev.ts, ev.text, ev.isError);
+        else addArrow(['sub', call.slot], call.caller, { chip: tag(call), ret: true, label: 'バックグラウンドで開始' });
       } else if (call.kind === 'skill') {
         finishTool(call.card, ev, call.ts);
         addArrow(['skill', call.slot], call.caller, { ret: true, err: ev.isError, label: `${call.name} 読み込み${ev.isError ? '失敗' : '完了'}` });
+      } else if (call.kind === 'ask') {
+        finishTool(call.card, ev, call.ts, call.input);
+        addArrow(['user', 0], call.caller, { ret: true, err: ev.isError, label: ev.isError ? '回答なし' : '回答', dur: fmtDur(ev.ts - call.ts),
+          details: [['answer', ev.text]] });
+        endAct(call.owner);
+        if (st.userAct === call.owner) st.userAct = null;
+      } else if (call.kind === 'mcp') {
+        finishTool(call.card, ev, call.ts, call.input);
+        endAct(call);
+        if (st.mcpSlots[call.slot] === call) st.mcpSlots[call.slot] = null;
       } else {
         finishTool(call.card, ev, call.ts, call.input);
       }
@@ -466,6 +537,7 @@ function updateStats() {
   $('sTools').textContent = st.counts.tools;
   $('sAgents').textContent = st.counts.agents;
   $('sSkills').textContent = st.counts.skills;
+  $('sMcp').textContent = st.counts.mcp;
 }
 
 // ---------- scrolling ----------

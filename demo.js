@@ -46,6 +46,11 @@ async function run() {
   await sleep(1200);
   asst(mainFile, { type: 'text', text: "I'll explore the codebase first, then plan the change." }, 'tool_use');
   await sleep(600);
+  const q = toolUse(mainFile, 'AskUserQuestion', { questions: [{ question: 'Keep the old token format for backward compatibility?', header: 'Compat',
+    options: [{ label: 'Yes' }, { label: 'No' }], multiSelect: false }] });
+  await sleep(2500);
+  toolResult(mainFile, q, 'User answered: "Keep the old token format for backward compatibility?"="Yes"');
+  await sleep(600);
   const s1 = toolUse(mainFile, 'Skill', { skill: 'code-review', args: 'auth/' });
   await sleep(700);
   toolResult(mainFile, s1, 'Launching skill: code-review');
@@ -71,6 +76,11 @@ async function run() {
   ]);
   await sleep(800);
   asst(mainFile, { type: 'text', text: 'Both explorations are done. Applying the refactor now.' });
+  await sleep(500);
+  const bgId = 'b' + randomUUID().slice(0, 7);
+  const bg = toolUse(mainFile, 'Bash', { command: 'npm run build', description: 'Build in the background', run_in_background: true });
+  await sleep(300);
+  toolResult(mainFile, bg, `Command running in background with ID: ${bgId}`, { backgroundTaskId: bgId });
   for (const [name, input, out, err] of [
     ['Edit', { file_path: '/demo/project/src/auth/token.ts', old_string: 'a', new_string: 'b' }, 'ok'],
     ['Bash', { command: 'npx vitest run auth', description: 'Run auth tests' }, '1 failed', true],
@@ -82,6 +92,22 @@ async function run() {
     await sleep(900);
     user(mainFile, [{ type: 'tool_result', tool_use_id: id, content: out, is_error: !!err }]);
   }
+  write(mainFile, { type: 'attachment', attachment: { type: 'queued_command',
+    prompt: `<task-notification>\n<task-id>${bgId}</task-id>\n<status>completed</status>\n<summary>Background command "npm run build" completed</summary>\n</task-notification>` } });
+  for (const [tool, input, out] of [
+    ['navigate', { url: 'http://localhost:3000/login' }, 'navigated'],
+    ['screenshot', {}, '[image]'],
+    ['find', { query: 'Sign in' }, 'ref_12 button "Sign in"'],
+  ]) {
+    await sleep(600);
+    const id = toolUse(mainFile, 'mcp__browser__' + tool, input);
+    await sleep(700);
+    toolResult(mainFile, id, out);
+  }
+  await sleep(500);
+  const g = toolUse(mainFile, 'mcp__github__create_issue', { title: 'Follow up: remove legacy token path' });
+  await sleep(900);
+  toolResult(mainFile, g, 'Created issue #42');
   await sleep(600);
   asst(mainFile, { type: 'text', text: 'Refactor complete; all 12 auth tests pass.' }, 'end_turn');
 }
