@@ -164,11 +164,15 @@ function laneX(lane, slot = 0) {
   const base = ['var(--l0)', 'var(--l1)', 'var(--l2)'][LANE[lane]];
   return `calc(${base} + 18px + ${slot * SLOT}px)`;
 }
+// Cards sit a fixed gap to the right of the rightmost active box in their lane, same as the main lane.
 function cardBox(lane) {
-  if (lane === 'main') return { left: 'calc(var(--l0) + 34px)', width: 'calc(var(--w0) - 46px)' };
-  const base = lane === 'sub' ? 'var(--l1)' : 'var(--l2)';
-  const w = lane === 'sub' ? 'var(--w1)' : 'var(--w2)';
-  return { left: `calc(${base} + 64px)`, width: `calc(${w} - 72px)` };
+  const slots = lane === 'sub' ? st.subSlots : lane === 'skill' ? st.skillSlots : [true];
+  let n = 1;
+  slots.forEach((o, i) => { if (o) n = Math.max(n, i + 1); });
+  const off = 18 + (n - 1) * SLOT + HALF + 9;
+  const base = ['var(--l0)', 'var(--l1)', 'var(--l2)'][LANE[lane]];
+  const w = ['var(--w0)', 'var(--w1)', 'var(--w2)'][LANE[lane]];
+  return { left: `calc(${base} + ${off}px)`, width: `calc(${w} - ${off + 12}px)` };
 }
 function allocSlot(arr, owner) {
   let i = arr.indexOf(null);
