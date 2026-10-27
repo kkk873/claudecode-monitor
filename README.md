@@ -37,7 +37,7 @@ ln -s "$(pwd)/skills/claudecode-monitor" ~/.claude/skills/claudecode-monitor
 ### C. スキルを使わず直接
 
 ```bash
-npx claudecode-monitor            # npm に公開した場合
+npx claudecode-monitor            # npm に公開した場合（今は非公開のため使えない）
 node skills/claudecode-monitor/server.js
 ```
 

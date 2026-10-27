@@ -1,6 +1,5 @@
 {
   "name": "claudecode-monitor",
   "version": "0.1.0",
-  "description": "Claude Code のログをリアルタイムにシーケンス図で表示するモニター。/claudecode-monitor で起動",
-  "license": "MIT"
+  "description": "Claude Code のログをリアルタイムにシーケンス図で表示するモニター。/claudecode-monitor で起動"
 }
