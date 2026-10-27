@@ -15,7 +15,7 @@
     --mb-font-mono: "UbuntuMono Nerd Font", "Ubuntu Mono", "Noto Sans Mono CJK JP", ui-monospace, monospace;
     --mb-radius: 14px; --mb-radius-s: 10px; --mb-border-w: 2px;
     /* lanes: User / Agents (main + subagents) / Skills / MCP */
-    --l0: 0%; --l1: 7%; --l2: 62%; --l3: 77%; --w0: 7%; --w1: 55%; --w2: 15%; --w3: 23%;
+    --l0: 0%; --l1: 25%; --l2: 50%; --l3: 75%; --w0: 25%; --w1: 25%; --w2: 25%; --w3: 25%;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; min-width: 760px; background: var(--mb-bg); color: var(--mb-ink-body);
@@ -124,8 +124,9 @@
   .arrow.err .lb { color: var(--mb-accent); }
   .arrow .lb .tm { font-family: var(--mb-font-mono); font-weight: 400; }
   /* arrows inside the Agents lane are only a few px long: put the label in the card column instead */
-  .arrow .lb.side { top: 12px; bottom: auto; left: auto; transform: none; max-width: none; }
-  .arrow .ln { animation: grow .45s ease-out; transform-origin: var(--from, left); }
+  .arrow .lb.side { top: 12px; bottom: auto; left: auto; transform: none; }
+  .arrow .lb.side > span:not(.chip):not(.tm) { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .row.new.arrow .ln { animation: grow .45s ease-out; transform-origin: var(--from, left); }
   @keyframes grow { from { transform: scaleX(0); } }
 
   .empty { margin: 60px auto; max-width: 520px; padding: 18px 24px; text-align: center; color: var(--mb-muted);
@@ -290,7 +291,9 @@ function addArrow(from, to, { label, chip, dur, ret, err, details }) {
   if (dur) lb.appendChild(el('span', 'tm', dur));
   if (LANE[from[0]] === LANE[to[0]]) {
     lb.classList.add('side');
-    lb.style.left = cardBox(from[0]).left;
+    const box = cardBox(from[0]);
+    lb.style.left = box.left;
+    lb.style.maxWidth = box.width; // stay inside the lane; the full text is in the details
     r.appendChild(lb);
   } else ln.appendChild(lb);
   r.appendChild(ln);
@@ -603,7 +606,7 @@ $('showText').onchange = (e) => document.body.classList.toggle('hide-text', !e.t
 if (location.hash) $('follow').checked = false;
 
 const setHH = () => document.documentElement.style.setProperty('--hh', $('hdr').offsetHeight + 'px');
-window.addEventListener('resize', setHH); setHH();
+new ResizeObserver(setHH).observe($('hdr')); setHH(); // header height changes as fonts load and controls wrap
 
 resetState();
 refreshSessions();
