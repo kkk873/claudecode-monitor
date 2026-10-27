@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Code Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu+Sans:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* Design tokens: mb-slide / mathbullet document.css (MIT) */
+  :root {
+    --mb-bg: #FAFAFA; --mb-surface: #FFFFFF; --mb-ink: #111110; --mb-ink-body: #1A1A1A; --mb-border: #111110;
+    --mb-rule: #DFDFDF; --mb-muted: #595959; --mb-faint: #A5A5A5; --mb-link: #2990DA; --mb-accent: #D63A2F; --mb-code-bg: #EDEDED;
+    --mb-font-sans: "Ubuntu Sans", "Noto Sans JP", "Noto Sans CJK JP", "Hiragino Sans", "Yu Gothic UI", "Meiryo", sans-serif;
+    --mb-font-mono: "UbuntuMono Nerd Font", "Ubuntu Mono", "Noto Sans Mono CJK JP", ui-monospace, monospace;
+    --mb-radius: 14px; --mb-radius-s: 10px; --mb-border-w: 2px;
+    --l0: 0%; --l1: 36%; --l2: 77%; --w0: 36%; --w1: 41%; --w2: 23%;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-width: 600px; background: var(--mb-bg); color: var(--mb-ink-body);
+    font: 14px/1.6 var(--mb-font-sans); font-feature-settings: "palt"; letter-spacing: 0.01em;
+    word-break: auto-phrase; line-break: strict; }
+  button, select, input { font: inherit; }
+
+  header { position: sticky; top: 0; z-index: 10; background: var(--mb-bg); border-bottom: var(--mb-border-w) solid var(--mb-border);
+    display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; padding: 12px 16px; }
+  header h1 { margin: 0; font-size: 18px; font-weight: 700; line-height: 1.3; color: var(--mb-ink);
+    border-left: 8px solid var(--mb-ink); padding-left: 12px; white-space: nowrap; display: flex; align-items: center; gap: 10px; }
+  .live { width: 10px; height: 10px; border-radius: 50%; border: var(--mb-border-w) solid var(--mb-border); background: var(--mb-surface); }
+  .live.on { background: var(--mb-ink); animation: blink 1.6s ease-in-out infinite; }
+  @keyframes blink { 50% { opacity: .35; } }
+  select { background: var(--mb-surface); color: var(--mb-ink); border: var(--mb-border-w) solid var(--mb-border); border-radius: var(--mb-radius-s);
+    padding: 4px 10px; max-width: min(520px, 100%); }
+  label.tg { display: flex; align-items: center; gap: 6px; color: var(--mb-muted); cursor: pointer; user-select: none; white-space: nowrap; }
+  label.tg input { accent-color: var(--mb-ink); }
+  .stats { margin-left: auto; display: flex; gap: 6px; white-space: nowrap; }
+  .stat { border: var(--mb-border-w) solid var(--mb-border); border-radius: var(--mb-radius-s); background: var(--mb-surface);
+    padding: 0 10px; color: var(--mb-muted); font-size: 13px; line-height: 1.8; }
+  .stat b { color: var(--mb-ink); font-family: var(--mb-font-mono); font-size: 15px; margin-left: 4px; }
+
+  .lanes { position: sticky; top: var(--hh, 56px); z-index: 9; display: flex; background: var(--mb-bg); border-bottom: var(--mb-border-w) solid var(--mb-border); }
+  .lanes div { padding: 10px 16px; }
+  .lanes span { font-weight: 700; color: var(--mb-ink); border-left: 6px solid var(--mb-ink); padding-left: 10px; font-size: 15px; }
+  .lanes div:nth-child(1) { width: var(--w0); }
+  .lanes div:nth-child(2) { width: var(--w1); border-left: var(--mb-border-w) solid var(--mb-rule); }
+  .lanes div:nth-child(3) { width: var(--w2); border-left: var(--mb-border-w) solid var(--mb-rule); }
+
+  #diagram { position: relative; padding-bottom: 120px; }
+  #diagram::before, #diagram::after { content: ""; position: absolute; top: 0; bottom: 0; width: 0; border-left: var(--mb-border-w) solid var(--mb-rule); }
+  #diagram::before { left: var(--l1); } #diagram::after { left: var(--l2); }
+
+  .row { position: relative; min-height: 8px; padding: 4px 0; }
+  .row.new { animation: appear .35s ease-out; }
+  @keyframes appear { from { opacity: 0; transform: translateY(6px); } }
+  /* UML-style: a thin dashed lifeline, with an activation box while the participant is working */
+  .lifeline { position: absolute; top: 0; bottom: 0; width: 0; margin-left: -1px; border-left: 1px dashed var(--mb-faint); }
+  .act { position: absolute; top: 0; bottom: 0; width: 14px; margin-left: -7px; z-index: 1; background: var(--mb-surface);
+    border: var(--mb-border-w) solid var(--mb-border); border-top: 0; border-bottom: 0; }
+  .act.start { top: 4px; border-top: var(--mb-border-w) solid var(--mb-border); border-radius: 4px 4px 0 0; }
+  .act.end { bottom: 4px; border-bottom: var(--mb-border-w) solid var(--mb-border); border-radius: 0 0 4px 4px; }
+  .act.start.end { border-radius: 4px; }
+  /* in an arrow row, the box edge sits exactly on the arrow line (top: 22px, 2px thick, row height 32px) */
+  .arrow .act.start { top: 22px; }
+  .arrow .act.end { bottom: 8px; }
+  /* agents are told apart by fill (and their A1/A2 chip), not by color */
+  .act.p1 { background: var(--mb-code-bg); }
+  .act.p2 { background: repeating-linear-gradient(45deg, var(--mb-surface) 0 3px, var(--mb-rule) 3px 5px); }
+  .act.skill { border-color: var(--mb-muted); background: var(--mb-bg); }
+
+  .card { position: relative; z-index: 1; background: var(--mb-surface); border: var(--mb-border-w) solid var(--mb-border);
+    border-radius: var(--mb-radius-s); padding: 5px 12px; cursor: pointer; overflow: hidden; }
+  .card:hover { box-shadow: 3px 3px 0 var(--mb-ink); }
+  .card .hd { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+  .card .nm { font-weight: 700; color: var(--mb-ink); white-space: nowrap; }
+  .card .sm { color: var(--mb-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0;
+    font-family: var(--mb-font-mono); font-size: 13.5px; }
+  .card .tm { color: var(--mb-muted); font-family: var(--mb-font-mono); font-size: 12.5px; white-space: nowrap; }
+  .chip { display: inline-block; border: var(--mb-border-w) solid var(--mb-border); border-radius: 8px; padding: 0 0.5em;
+    font-family: var(--mb-font-mono); font-size: 12px; line-height: 1.5; background: var(--mb-surface); color: var(--mb-ink); white-space: nowrap; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; align-self: center;
+    border: var(--mb-border-w) solid var(--mb-border); background: var(--mb-surface); }
+  .dot.run { border-color: var(--mb-rule); border-top-color: var(--mb-ink); animation: spin .8s linear infinite; }
+  .dot.ok { background: var(--mb-ink); }
+  .dot.err { background: var(--mb-accent); border-color: var(--mb-accent); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .card.err { border-color: var(--mb-accent); }
+  .card.text { border-color: var(--mb-rule); }
+  .card.text .body { white-space: pre-wrap; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .card.open.text .body { display: block; }
+  .card pre { display: none; margin: 8px 0 4px; padding: 10px 12px; background: var(--mb-bg); border: var(--mb-border-w) solid var(--mb-rule);
+    border-radius: 8px; max-height: 360px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+    font: 13px/1.5 var(--mb-font-mono); color: var(--mb-ink-body); }
+  .card.open pre { display: block; }
+  .card pre .k { color: var(--mb-muted); font-weight: 700; }
+
+  .banner { margin: 16px 12px 8px; padding: 10px 16px; border-radius: var(--mb-radius); background: var(--mb-surface);
+    border: var(--mb-border-w) solid var(--mb-border); position: relative; z-index: 1; cursor: pointer; }
+  .banner .who { display: block; font-weight: 700; color: var(--mb-ink); font-size: 13px; margin-bottom: 2px; }
+  .banner .who .tm { color: var(--mb-muted); font-family: var(--mb-font-mono); font-weight: 400; margin-left: 8px; }
+  .banner .body { white-space: pre-wrap; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .banner.open .body { display: block; }
+
+  .arrow { height: 32px; }
+  .arrow .ln { position: absolute; top: 22px; height: 0; border-top: 2px solid var(--mb-ink); z-index: 2; }
+  .arrow.ret .ln { border-top-style: dashed; border-top-color: var(--mb-muted); }
+  .arrow.err .ln { border-top-color: var(--mb-accent); }
+  .arrow .ln::after { content: ""; position: absolute; top: -6px; border: 5px solid transparent; }
+  .arrow.r .ln::after { right: -2px; border-left: 8px solid; border-left-color: inherit; border-right: 0; }
+  .arrow.l .ln::after { left: -2px; border-right: 8px solid; border-right-color: inherit; border-left: 0; }
+  .arrow .ln { border-color: var(--mb-ink); }
+  .arrow.ret .ln { border-color: var(--mb-muted); }
+  .arrow.err .ln { border-color: var(--mb-accent); }
+  .arrow .lb { position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); white-space: nowrap; max-width: 440px;
+    overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; font-weight: 700; color: var(--mb-ink); background: var(--mb-bg);
+    padding: 0 6px; cursor: pointer; display: flex; gap: 6px; align-items: center; }
+  .arrow.ret .lb { color: var(--mb-muted); font-weight: 500; }
+  .arrow.err .lb { color: var(--mb-accent); }
+  .arrow .lb .tm { font-family: var(--mb-font-mono); font-weight: 400; }
+  .arrow .ln { animation: grow .45s ease-out; transform-origin: var(--from, left); }
+  @keyframes grow { from { transform: scaleX(0); } }
+
+  .empty { margin: 60px auto; max-width: 520px; padding: 18px 24px; text-align: center; color: var(--mb-muted);
+    background: var(--mb-surface); border: var(--mb-border-w) solid var(--mb-border); border-radius: var(--mb-radius); }
+  body.hide-text .row.text { display: none; }
+  #jump { position: fixed; right: 18px; bottom: 18px; z-index: 20; display: none; background: var(--mb-surface); color: var(--mb-ink);
+    border: var(--mb-border-w) solid var(--mb-border); border-radius: var(--mb-radius-s); padding: 6px 14px; font-weight: 700; cursor: pointer;
+    box-shadow: 3px 3px 0 var(--mb-ink); align-items: center; gap: 6px; }
+  #jump:hover { transform: translate(1px, 1px); box-shadow: 2px 2px 0 var(--mb-ink); }
+  @media (max-width: 760px) { .stats { margin-left: 0; } }
+</style>
+</head>
+<body>
+<header id="hdr">
+  <h1><span class="live" id="live"></span>Claude Code Monitor</h1>
+  <select id="sessions"></select>
+  <label class="tg"><input type="checkbox" id="follow" checked> 最新セッションを追従</label>
+  <label class="tg"><input type="checkbox" id="showText" checked> テキスト</label>
+  <div class="stats">
+    <span class="stat">tools<b id="sTools">0</b></span><span class="stat">subagents<b id="sAgents">0</b></span><span class="stat">skills<b id="sSkills">0</b></span>
+  </div>
+</header>
+<div class="lanes"><div><span>Main Agent</span></div><div><span>Subagents</span></div><div><span>Skills</span></div></div>
+<div id="diagram"><div class="empty">セッションを読み込み中</div></div>
+<button id="jump"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 1v9M2 6l4 4 4-4"/></svg>最新へ</button>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const diagram = $('diagram');
+const LANE = { main: 0, sub: 1, skill: 2 };
+const SLOT = 18;
+const HALF = 7; // half the activation box width; arrows stop at the box edge
+
+let st, es, currentSession = null, sessionsCache = [];
+
+function resetState() {
+  st = { agents: new Map(), calls: new Map(), subSlots: [], skillSlots: [], counts: { tools: 0, agents: 0, skills: 0 }, live: false,
+    mainAct: null, lastAct: new Map() };
+  diagram.innerHTML = '';
+  updateStats();
+}
+
+// ---------- geometry ----------
+function laneX(lane, slot = 0) {
+  const base = ['var(--l0)', 'var(--l1)', 'var(--l2)'][LANE[lane]];
+  return `calc(${base} + 18px + ${slot * SLOT}px)`;
+}
+function cardBox(lane) {
+  if (lane === 'main') return { left: 'calc(var(--l0) + 34px)', width: 'calc(var(--w0) - 46px)' };
+  const base = lane === 'sub' ? 'var(--l1)' : 'var(--l2)';
+  const w = lane === 'sub' ? 'var(--w1)' : 'var(--w2)';
+  return { left: `calc(${base} + 64px)`, width: `calc(${w} - 72px)` };
+}
+function allocSlot(arr, owner) {
+  let i = arr.indexOf(null);
+  if (i < 0) { i = arr.length; arr.push(null); }
+  arr[i] = owner;
+  return i;
+}
+
+// ---------- dom ----------
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+function fmtTime(ts) { return ts ? new Date(ts).toLocaleTimeString('ja-JP', { hour12: false }) : ''; }
+function fmtDur(ms) { return ms == null || isNaN(ms) ? '' : ms < 1000 ? `${ms}ms` : ms < 60000 ? `${(ms / 1000).toFixed(1)}s` : `${Math.floor(ms / 60000)}m${Math.round(ms % 60000 / 1000)}s`; }
+
+function newRow(cls) {
+  const r = el('div', 'row ' + (cls || ''));
+  if (st.live) r.classList.add('new');
+  const line = el('div', 'lifeline');
+  line.style.left = laneX('main');
+  r.appendChild(line);
+  if (cls !== 'user') {
+    st.mainAct = st.mainAct || {};
+    addAct(r, st.mainAct, 'main', 0, 'main');
+  }
+  st.subSlots.forEach((owner, i) => {
+    if (!owner) return;
+    const a = st.agents.get(owner) || st.calls.get(owner);
+    if (a) addAct(r, a, 'sub', i, 'p' + ((a.n - 1) % 3));
+  });
+  st.skillSlots.forEach((owner, i) => { if (owner) addAct(r, owner, 'skill', i, 'skill'); });
+  diagram.appendChild(r);
+  return r;
+}
+// one segment of an activation box per row; the first gets a top edge, endAct() adds the bottom edge
+function addAct(row, owner, lane, slot, cls) {
+  const b = el('div', 'act ' + cls + (st.lastAct.has(owner) ? '' : ' start'));
+  b.style.left = laneX(lane, slot);
+  row.appendChild(b);
+  st.lastAct.set(owner, b);
+}
+function endAct(owner) {
+  const b = owner && st.lastAct.get(owner);
+  if (b) b.classList.add('end');
+}
+function endMainTurn() {
+  endAct(st.mainAct);
+  st.mainAct = null;
+}
+
+function addCard(lane, { cls = '', name, summary, chip, ts, details, body, rowCls }) {
+  const r = newRow(rowCls);
+  const c = el('div', 'card ' + cls);
+  const box = cardBox(lane);
+  c.style.marginLeft = box.left; c.style.width = box.width;
+  const hd = el('div', 'hd');
+  if (cls.includes('tool')) { c.dot = el('span', 'dot run'); hd.appendChild(c.dot); }
+  if (chip) hd.appendChild(el('span', 'chip', chip));
+  if (name) hd.appendChild(el('span', 'nm', name));
+  hd.appendChild(el('span', 'sm', summary == null ? '' : summary));
+  c.tm = el('span', 'tm', fmtTime(ts));
+  hd.appendChild(c.tm);
+  c.appendChild(hd);
+  if (body != null) c.appendChild(el('div', 'body', body));
+  c.pre = el('pre');
+  if (details) setDetails(c, details);
+  c.appendChild(c.pre);
+  c.addEventListener('click', (e) => { if (!e.target.closest('pre')) c.classList.toggle('open'); });
+  r.appendChild(c);
+  return c;
+}
+function setDetails(card, sections) {
+  card.pre.textContent = '';
+  for (const [k, v] of sections) {
+    if (v == null || v === '') continue;
+    card.pre.appendChild(el('span', 'k', `${k}\n`));
+    card.pre.appendChild(document.createTextNode((typeof v === 'string' ? v : JSON.stringify(v, null, 2)) + '\n\n'));
+  }
+}
+
+function addArrow(from, to, { label, chip, dur, ret, err, details }) {
+  const r = newRow('arrow' + (ret ? ' ret' : '') + (err ? ' err' : ''));
+  const a = LANE[from[0]] * 100 + from[1], b = LANE[to[0]] * 100 + to[1];
+  const [L, R] = a <= b ? [from, to] : [to, from];
+  r.classList.add(a <= b ? 'r' : 'l');
+  const ln = el('div', 'ln');
+  ln.style.setProperty('--from', a <= b ? 'left' : 'right');
+  ln.style.left = `calc(${laneX(...L)} + ${HALF}px)`;
+  ln.style.width = `calc(${laneX(...R)} - ${laneX(...L)} - ${HALF * 2}px)`;
+  const lb = el('span', 'lb');
+  if (chip) lb.appendChild(el('span', 'chip', chip));
+  lb.appendChild(el('span', null, label));
+  if (dur) lb.appendChild(el('span', 'tm', dur));
+  ln.appendChild(lb);
+  r.appendChild(ln);
+  if (details) {
+    lb.title = 'クリックで詳細';
+    let card = null;
+    lb.addEventListener('click', () => {
+      if (card) { card.parentElement.remove(); card = null; return; }
+      const lane = to[0] === 'skill' && !ret ? 'skill' : (ret ? to[0] : from[0]);
+      card = addCardAfter(r, lane, details);
+    });
+  }
+  return r;
+}
+function addCardAfter(row, lane, details) {
+  const holder = el('div', 'row');
+  const c = el('div', 'card open');
+  const box = cardBox(lane);
+  c.style.marginLeft = box.left; c.style.width = box.width;
+  c.pre = el('pre'); setDetails(c, details); c.appendChild(c.pre);
+  holder.appendChild(c);
+  row.after(holder);
+  return c;
+}
+
+// ---------- event semantics ----------
+function laneOf(ev) {
+  if (!ev.agent) return ['main', 0];
+  const a = ensureAgent(ev.agent);
+  return ['sub', a.slot];
+}
+function newAgentNo() { return ++st.counts.agents; }
+function ensureAgent(agentId, ev) {
+  let a = st.agents.get(agentId);
+  if (a) return a;
+  // bind to a pending Agent call, preferring an exact prompt match
+  const pending = [...st.calls.values()].filter((c) => c.kind === 'agent' && !c.agentId);
+  let call = ev && ev.text ? pending.find((c) => c.prompt && (c.prompt.trim() === ev.text.trim() || ev.text.startsWith(c.prompt.slice(0, 200)))) : null;
+  call = call || pending[0];
+  if (call) {
+    call.agentId = agentId;
+    a = call;
+  } else {
+    a = { kind: 'agent', agentId, n: newAgentNo(), type: (ev && ev.agentType) || 'subagent' };
+    a.slot = allocSlot(st.subSlots, agentId);
+  }
+  st.agents.set(agentId, a);
+  st.subSlots[a.slot] = agentId;
+  return a;
+}
+const tag = (a) => 'A' + a.n;
+function endAgent(a, ts, text, err) {
+  if (a.done) return;
+  a.done = true;
+  addArrow(['sub', a.slot], a.caller || ['main', 0], { chip: tag(a), ret: true, err, label: `${a.type} ${err ? 'エラー' : '完了'}`,
+    dur: fmtDur(ts - a.ts), details: text ? [['result', text]] : null });
+  endAct(a);
+  st.subSlots[a.slot] = null;
+  endSkills(a.agentId);
+}
+function endSkills(owner) {
+  st.skillSlots.forEach((o, i) => { if (o && o.owner === owner) { endAct(o); st.skillSlots[i] = null; } });
+}
+
+function summarize(name, input = {}) {
+  if (!input || typeof input !== 'object') return '';
+  const base = (p) => (p || '').split('/').slice(-2).join('/');
+  switch (name) {
+    case 'Bash': return input.description ? `${input.description} — ${input.command}` : input.command;
+    case 'Read': case 'Write': case 'Edit': case 'MultiEdit': case 'NotebookEdit': return base(input.file_path || input.notebook_path);
+    case 'Grep': return `${input.pattern}${input.path ? '  in ' + base(input.path) : ''}`;
+    case 'Glob': return input.pattern;
+    case 'WebFetch': return input.url;
+    case 'WebSearch': return input.query;
+    case 'TodoWrite': return `${(input.todos || []).length} items`;
+  }
+  const v = Object.values(input).find((x) => typeof x === 'string');
+  return v || JSON.stringify(input).slice(0, 120);
+}
+function shortName(name) {
+  const m = name.match(/^mcp__(.+?)__(.+)$/);
+  return m ? m[2] : name;
+}
+function banner(who, ts, text) {
+  const r = newRow('user');
+  const b = el('div', 'banner');
+  const w = el('span', 'who', who);
+  w.appendChild(el('span', 'tm', fmtTime(ts)));
+  b.appendChild(w);
+  b.appendChild(el('div', 'body', text || ''));
+  b.addEventListener('click', () => b.classList.toggle('open'));
+  r.appendChild(b);
+}
+
+function handle(ev) {
+  switch (ev.kind) {
+    case 'user':
+      endSkills(null);
+      endMainTurn();
+      banner('User', ev.ts, ev.text);
+      return;
+    case 'slash': {
+      endSkills(null);
+      endMainTurn();
+      banner(`User  /${ev.name}`, ev.ts, ev.text);
+      const slot = allocSlot(st.skillSlots, { owner: null, name: ev.name });
+      st.counts.skills++;
+      addArrow(['main', 0], ['skill', slot], { label: `/${ev.name}` });
+      addCard('skill', { name: ev.name, summary: ev.text, ts: ev.ts, details: [['args', ev.text]] });
+      return;
+    }
+    case 'notify': {
+      // a background agent finished: close its lifeline instead of showing a card
+      const id = (ev.text.match(/<task-id>([^<]+)<\/task-id>/) || ev.text.match(/<agent-message from="([^"]+)"/) || [])[1];
+      const a = id && st.agents.get(id);
+      if (a) { if (!a.done) endAgent(a, ev.ts, ev.text); return; }
+      const summ = (ev.text.match(/<summary>([\s\S]*?)<\/summary>/) || ev.text.match(/<status>([\s\S]*?)<\/status>/) || [])[1];
+      addCard('main', { name: '通知', summary: summ || '', ts: ev.ts, details: [['message', ev.text]] });
+      return;
+    }
+    case 'agent_prompt': {
+      const a = ensureAgent(ev.agent, ev);
+      if (ev.agentType && a.type === 'subagent') a.type = ev.agentType;
+      addCard('sub', { chip: tag(a), name: a.type, summary: a.desc || ev.description || ev.text, ts: ev.ts, details: [['prompt', ev.text]] });
+      return;
+    }
+    case 'text': {
+      const [lane] = laneOf(ev);
+      const a = ev.agent && st.agents.get(ev.agent);
+      addCard(lane, { cls: 'text', rowCls: 'text', chip: a ? tag(a) : null, name: a ? a.type : 'Claude', ts: ev.ts, body: ev.text });
+      if (a && ev.stopReason === 'end_turn' && a.async) endAgent(a, ev.ts, ev.text);
+      if (!ev.agent && ev.stopReason === 'end_turn') endMainTurn();
+      return;
+    }
+    case 'tool_use': {
+      const caller = laneOf(ev);
+      const callerAgent = ev.agent ? st.agents.get(ev.agent) : null;
+      const input = ev.input || {};
+      if (ev.name === 'SubagentHandback' && callerAgent) {
+        endAgent(callerAgent, ev.ts, input.message);
+        break;
+      }
+      if (['Agent', 'Task'].includes(ev.name)) {
+        const call = { kind: 'agent', toolUseId: ev.toolUseId, prompt: input.prompt, type: input.subagent_type || 'general-purpose',
+          desc: input.description, ts: ev.ts, caller, async: !!input.run_in_background, n: newAgentNo() };
+        call.slot = allocSlot(st.subSlots, ev.toolUseId);
+        st.calls.set(ev.toolUseId, call);
+        addArrow(caller, ['sub', call.slot], { chip: tag(call), label: `${call.type}${call.desc ? ' — ' + call.desc : ''}`,
+          details: [['prompt', input.prompt], ['input', input]] });
+        break;
+      }
+      if (ev.name === 'Skill') {
+        const name = input.skill || input.command || input.name || 'skill';
+        const slot = allocSlot(st.skillSlots, { owner: ev.agent || null, name });
+        st.counts.skills++;
+        const call = { kind: 'skill', name, slot, ts: ev.ts, caller };
+        st.calls.set(ev.toolUseId, call);
+        addArrow(caller, ['skill', slot], { label: `Skill: ${name}` });
+        call.card = addCard('skill', { cls: 'tool', name, summary: input.args || '', ts: ev.ts, details: [['input', input]] });
+        break;
+      }
+      st.counts.tools++;
+      const card = addCard(caller[0], { cls: 'tool', chip: callerAgent ? tag(callerAgent) : null, name: shortName(ev.name),
+        summary: summarize(ev.name, input), ts: ev.ts, details: [['input', input]] });
+      st.calls.set(ev.toolUseId, { kind: 'tool', card, ts: ev.ts, input });
+      break;
+    }
+    case 'tool_result': {
+      const call = st.calls.get(ev.toolUseId);
+      if (!call) return;
+      if (call.kind === 'agent') {
+        if (ev.resultAgentId && !call.agentId) { call.agentId = ev.resultAgentId; st.agents.set(ev.resultAgentId, call); }
+        const launched = call.async || /async|launched/i.test(ev.resultStatus || '');
+        if (launched && !ev.isError) {
+          call.async = true;
+          addArrow(['sub', call.slot], call.caller, { chip: tag(call), ret: true, label: 'バックグラウンドで開始' });
+        } else endAgent(call, ev.ts, ev.text, ev.isError);
+      } else if (call.kind === 'skill') {
+        finishTool(call.card, ev, call.ts);
+        addArrow(['skill', call.slot], call.caller, { ret: true, err: ev.isError, label: `${call.name} 読み込み${ev.isError ? '失敗' : '完了'}` });
+      } else {
+        finishTool(call.card, ev, call.ts, call.input);
+      }
+      break;
+    }
+  }
+  updateStats();
+}
+function finishTool(card, ev, t0, input) {
+  card.dot.className = 'dot ' + (ev.isError ? 'err' : 'ok');
+  if (ev.isError) card.classList.add('err');
+  card.tm.textContent = `${fmtTime(t0)} · ${fmtDur(ev.ts - t0)}`;
+  setDetails(card, [['input', input], [ev.isError ? 'error' : 'result', ev.text]]);
+}
+function updateStats() {
+  $('sTools').textContent = st.counts.tools;
+  $('sAgents').textContent = st.counts.agents;
+  $('sSkills').textContent = st.counts.skills;
+}
+
+// ---------- scrolling ----------
+const nearBottom = () => window.innerHeight + window.scrollY >= document.body.scrollHeight - 160;
+const toBottom = () => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+$('jump').onclick = toBottom;
+window.addEventListener('scroll', () => { $('jump').style.display = nearBottom() ? 'none' : 'flex'; });
+
+// ---------- sessions & stream ----------
+function showEmpty(msg) { diagram.innerHTML = ''; diagram.appendChild(el('div', 'empty', msg)); }
+function connect(sid) {
+  if (es) es.close();
+  currentSession = sid;
+  resetState();
+  if (!sid) { showEmpty('直近のセッションが見つかりません。Claude Code を使うとここに表示されます'); return; }
+  es = new EventSource('/api/stream?session=' + encodeURIComponent(sid));
+  es.addEventListener('init', (m) => {
+    resetState();
+    const evs = JSON.parse(m.data);
+    evs.forEach(handle);
+    if (!evs.length) showEmpty('イベントはまだありません');
+    st.live = true;
+    window.scrollTo({ top: document.body.scrollHeight });
+  });
+  es.addEventListener('events', (m) => {
+    const stick = nearBottom();
+    JSON.parse(m.data).forEach(handle);
+    if (stick) toBottom();
+  });
+  es.onopen = () => $('live').classList.add('on');
+  es.onerror = () => $('live').classList.remove('on');
+}
+
+
+function sessionLabel(s) {
+  const proj = (s.cwd || s.project || '').split(/[\\/]/).filter(Boolean).pop() || s.project;
+  const ago = Math.round((Date.now() - s.lastTs) / 60000);
+  const when = ago < 1 ? 'now' : ago < 60 ? `${ago}m` : ago < 1440 ? `${Math.round(ago / 60)}h` : `${Math.round(ago / 1440)}d`;
+  const hot = Date.now() - s.lastTs < 90000 ? '● ' : '';
+  return `${hot}[${proj}] ${s.title.replace(/\s+/g, ' ').slice(0, 60)} · ${when}`;
+}
+async function refreshSessions() {
+  try {
+    sessionsCache = await (await fetch('/api/sessions')).json();
+  } catch { $('live').classList.remove('on'); return; }
+  const sel = $('sessions');
+  const keep = currentSession;
+  sel.innerHTML = '';
+  for (const s of sessionsCache) {
+    const o = el('option', null, sessionLabel(s));
+    o.value = s.id;
+    sel.appendChild(o);
+  }
+  const fromHash = decodeURIComponent(location.hash.slice(1));
+  let target = keep || fromHash || (sessionsCache[0] && sessionsCache[0].id);
+  if ($('follow').checked && sessionsCache[0]) target = sessionsCache[0].id;
+  if (target) sel.value = target;
+  if (target !== currentSession || !es) { location.hash = target || ''; connect(target); }
+}
+$('sessions').onchange = (e) => { $('follow').checked = false; location.hash = e.target.value; connect(e.target.value); };
+$('follow').onchange = refreshSessions;
+$('showText').onchange = (e) => document.body.classList.toggle('hide-text', !e.target.checked);
+if (location.hash) $('follow').checked = false;
+
+const setHH = () => document.documentElement.style.setProperty('--hh', $('hdr').offsetHeight + 'px');
+window.addEventListener('resize', setHH); setHH();
+
+resetState();
+refreshSessions();
+setInterval(refreshSessions, 3000);
+</script>
+</body>
+</html>

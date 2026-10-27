@@ -1,0 +1,26 @@
+{
+  "name": "claudecode-monitor",
+  "version": "0.1.0",
+  "description": "Real-time sequence-diagram viewer for Claude Code session logs (main agent / subagents / skills)",
+  "bin": {
+    "claudecode-monitor": "skills/claudecode-monitor/server.js"
+  },
+  "files": [
+    "skills/claudecode-monitor/server.js",
+    "skills/claudecode-monitor/public"
+  ],
+  "scripts": {
+    "start": "node skills/claudecode-monitor/server.js",
+    "demo": "node demo.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "claude-code",
+    "claude",
+    "monitor",
+    "sequence-diagram"
+  ],
+  "license": "MIT"
+}

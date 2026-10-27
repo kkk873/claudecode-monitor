@@ -1,0 +1,13 @@
+{
+  "name": "claudecode-monitor",
+  "owner": {
+    "name": "koki"
+  },
+  "plugins": [
+    {
+      "name": "claudecode-monitor",
+      "source": "./",
+      "description": "Claude Code のログをリアルタイムにシーケンス図で表示するモニター"
+    }
+  ]
+}

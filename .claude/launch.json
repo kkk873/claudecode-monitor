@@ -1,0 +1,22 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "monitor",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "skills/claudecode-monitor/server.js",
+        "--no-open"
+      ],
+      "port": 4317
+    },
+    {
+      "name": "demo",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "demo.js"
+      ],
+      "port": 4318
+    }
+  ]
+}
