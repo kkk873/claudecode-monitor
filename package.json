@@ -23,5 +23,6 @@
     "monitor",
     "sequence-diagram"
   ],
-  "license": "UNLICENSED"
+  "license": "MIT",
+  "author": "dmbtomorrow"
 }

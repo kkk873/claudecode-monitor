@@ -1,7 +1,7 @@
 # Claude Code Monitor
 
 `~/.claude/projects/**/*.jsonl` (Claude Code のセッションログ) をリアルタイムに tail して、
-**Main Agent / Subagents / Skills** の 3 レーンのシーケンス図としてブラウザに表示するツール。依存パッケージなし (Node 18+)。
+**User / Agents / Skills / MCP** の 4 レーンのシーケンス図としてブラウザに表示するツール。依存パッケージなし (Node 18+)。
 
 ## 使い方
 
@@ -53,10 +53,10 @@ node skills/claudecode-monitor/server.js
 
 ## 見え方
 
-- ユーザー入力は全レーン横断の帯
-- 各参加者が動いている間は、ライフライン上の箱（活性区間）。メインはターンごと、サブエージェントとスキルは呼び出しから完了まで
-- `Agent` 呼び出しで Subagents レーンへ矢印、完了で点線の戻り矢印。並行するサブエージェントは `A1`・`A2` のラベルと箱の塗りで区別
-- `Skill` 呼び出しや `/slash` コマンドで Skills レーンへ矢印
+- レーンは User / Agents / Skills / MCP の 4 本
+- 各参加者が動いている間は、ライフライン上の箱（活性区間）。Agents レーンでは左端の箱がメインエージェント、2 個目以降がサブエージェント（`A1`・`A2`）とバックグラウンドのコマンド（`B1`）
+- 依頼は User から Agents への矢印。`AskUserQuestion` は「質問」「回答」の矢印で、返事を待つ間は User 側に箱が出る
+- `Skill` 呼び出しや `/slash` コマンドで Skills レーンへ、MCP ツールはサーバーごとのライフラインへ矢印
 - ツールは実行中・成功（黒）・失敗（赤）と所要時間。カードや矢印のラベルをクリックすると入力と結果を表示
 
 ## 開発
@@ -70,4 +70,9 @@ npm run demo    # ダミーのログを書き出しながら再生（http://loca
 - `server.js` が 600ms ごとに jsonl の追記分だけを読み、イベントに正規化して SSE で配信
 - サブエージェントのログは `<session>/subagents/agent-<id>.jsonl`。親の `Agent` 呼び出しとはプロンプト文字列で対応付け
 - ログ形式は Claude Code の内部仕様なので、バージョンによって変わる可能性あり
-- デザインは mathbullet/skills の html プラグインのデザインシステム（MIT）に合わせている
+
+## ライセンス
+
+MIT License。[LICENSE](LICENSE) を参照。
+
+画面のデザイン（色・書体・罫線・部品の見た目）は、[mathbullet/skills](https://github.com/mathbullet/skills) の html プラグインのデザインシステム（`document.css`、MIT License, Copyright (c) 2026 mathbullet）を元にしている。元のライセンス表記は LICENSE の Third-party notices に収録。
