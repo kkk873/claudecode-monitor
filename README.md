@@ -22,7 +22,7 @@ Claude Code の中で:
 このリポジトリを GitHub に置き、Claude Code で:
 
 ```text
-/plugin marketplace add <GitHubユーザー>/claudecode-monitor
+/plugin marketplace add kkk873/claudecode-monitor
 /plugin install claudecode-monitor@claudecode-monitor
 ```
 
