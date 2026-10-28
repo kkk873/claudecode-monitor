@@ -75,4 +75,4 @@ npm run demo    # ダミーのログを書き出しながら再生（http://loca
 
 MIT License。[LICENSE](LICENSE) を参照。
 
-画面のデザイン（色・書体・罫線・部品の見た目）は、[mathbullet/skills](https://github.com/mathbullet/skills) の html プラグインのデザインシステム（`document.css`、MIT License, Copyright (c) 2026 mathbullet）を元にしている。元のライセンス表記は LICENSE の Third-party notices に収録。
+画面のデザイン（色・書体・罫線・部品の見た目）は、[mathbullet/skills](https://github.com/mathbullet/skills) の html プラグインのデザインシステム（`document.css`、MIT License, Copyright (c) 2026 mathbullet）を元にしている。元のライセンス表記は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) に収録。
