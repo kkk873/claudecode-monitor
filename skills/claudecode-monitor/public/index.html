@@ -41,17 +41,16 @@
 
   .lanes { position: sticky; top: var(--hh, 56px); z-index: 9; display: flex; background: var(--mb-bg); border-bottom: var(--mb-border-w) solid var(--mb-border); }
   .lanes div { padding: 10px 12px; white-space: nowrap; overflow: hidden; }
-  .lanes span { font-weight: 700; color: var(--mb-ink); border-left: 6px solid var(--mb-ink); padding-left: 8px; font-size: 15px; }
+  .lanes span { font-weight: 700; color: var(--mb-ink); font-size: 15px; }
   .lanes div:nth-child(1) { width: var(--w0); }
   .lanes div:nth-child(2) { width: var(--w1); }
   .lanes div:nth-child(3) { width: var(--w2); }
   .lanes div:nth-child(4) { width: var(--w3); }
-  .lanes div + div { border-left: var(--mb-border-w) solid var(--mb-rule); }
+  .lanes div + div { border-left: 1px solid var(--mb-rule); }
   .lanes div:first-child { padding: 10px 4px 10px 10px; }
-  .lanes div:first-child span { padding-left: 6px; }
 
   #diagram { position: relative; padding-bottom: 120px; }
-  .divider { position: absolute; top: 0; bottom: 0; width: 0; border-left: var(--mb-border-w) solid var(--mb-rule); }
+  .divider { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1px solid var(--mb-rule); }
 
   .row { position: relative; min-height: 8px; padding: 4px 0; }
   .row.new { animation: appear .35s ease-out; }
